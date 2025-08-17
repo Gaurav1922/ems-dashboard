@@ -1,0 +1,139 @@
+{% extends 'employees/base.html' %}
+
+{% block title %}{{ employee.full_name }} - EMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-user me-2"></i>{{ employee.full_name }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'employee_update' employee.pk %}" class="btn btn-primary me-2">
+            <i class="fas fa-edit me-2"></i>Edit
+        </a>
+        <a href="{% url 'employee_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Personal Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-user-circle me-2"></i>Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong>Employee ID:</strong>
+                        <p>{{ employee.employee_id }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Full Name:</strong>
+                        <p>{{ employee.full_name }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Email:</strong>
+                        <p><a href="mailto:{{ employee.email }}">{{ employee.email }}</a></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Phone:</strong>
+                        <p><a href="tel:{{ employee.phone_number }}">{{ employee.phone_number }}</a></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Date of Birth:</strong>
+                        <p>{{ employee.date_of_birth|date:"F d, Y" }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Gender:</strong>
+                        <p>{{ employee.get_gender_display }}</p>
+                    </div>
+                    <div class="col-12">
+                        <strong>Address:</strong>
+                        <p>{{ employee.address }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employment Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-briefcase me-2"></i>Employment Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong>Department:</strong>
+                        <p>{{ employee.department.name }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Position:</strong>
+                        <p>{{ employee.position }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Salary:</strong>
+                        <p>${{ employee.salary|floatformat:2 }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Hire Date:</strong>
+                        <p>{{ employee.hire_date|date:"F d, Y" }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Status:</strong>
+                        <p>
+                            <span class="badge bg-{% if employee.status == 'active' %}success{% elif employee.status == 'inactive' %}warning{% else %}danger{% endif %} fs-6">
+                                {{ employee.status|title }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Quick Stats -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Quick Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Days Employed</small>
+                    <h6>{{ employee.hire_date|timesince }} ago</h6>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Department</small>
+                    <h6>{{ employee.department.name }}</h6>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Last Updated</small>
+                    <h6>{{ employee.updated_at|date:"M d, Y" }}</h6>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tools me-2"></i>Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'employee_update' employee.pk %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>Edit Employee
+                    </a>
+                    <a href="{% url 'employee_delete' employee.pk %}" class="btn btn-outline-danger">
+                        <i class="fas fa-trash me-2"></i>Delete Employee
+                    </a>
+                    <hr>
+                    <a href="{% url 'employee_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-2"></i>All Employees
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

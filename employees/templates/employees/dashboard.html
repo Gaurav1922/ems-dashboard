@@ -1,0 +1,192 @@
+{% extends 'employees/base.html' %}
+
+{% block title %}Dashboard - EMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h1>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card employees">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Total Employees</h5>
+                        <h2>{{ total_employees }}</h2>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Active Employees</h5>
+                        <h2>{{ active_employees }}</h2>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-user-check fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card departments">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Departments</h5>
+                        <h2>{{ total_departments }}</h2>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-building fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card salary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Avg Salary</h5>
+                        <h2>{{ avg_salary|floatformat:0 }}</h2>
+                    </div>
+                    <!--<div class="stat-icon">
+                        <i class="fas fa-dollar-sign fa-2x"></i>
+                    </div>-->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Department Statistics Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Department Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="departmentChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Employees -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clock me-2"></i>Recent Employees</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for employee in recent_employees %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ employee.full_name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ employee.position }} - {{ employee.department.name }}</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">{{ employee.status|title }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">No recent employees found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'employee_create' %}" class="btn btn-primary w-100">
+                            <i class="fas fa-user-plus me-2"></i>Add Employee
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'department_create' %}" class="btn btn-success w-100">
+                            <i class="fas fa-building me-2"></i>Add Department
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'employee_list' %}" class="btn btn-info w-100">
+                            <i class="fas fa-list me-2"></i>View All Employees
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="/admin/" class="btn btn-secondary w-100">
+                            <i class="fas fa-cog me-2"></i>Admin Panel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Department Chart
+const ctx = document.getElementById('departmentChart').getContext('2d');
+const departmentChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+        labels: [
+            {% for dept in dept_stats %}
+            '{{ dept.name }}'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for dept in dept_stats %}
+                {{ dept.employee_count }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: [
+                '#FF6384',
+                '#36A2EB',
+                '#FFCE56',
+                '#4BC0C0',
+                '#9966FF'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
