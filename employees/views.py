@@ -8,8 +8,16 @@ from .forms import EmployeeForm, DepartmentForm
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+
 
 # Create your views here.
+"""def register_view(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            username ="""
 """def login_view(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -64,7 +72,7 @@ def employee_list(request):
     # Search
     search_query = request.GET.get('search')
     if search_query:
-        employees = employees.filter(first_name__icontains=search_query) | employees.filter(last_name__icontains=search_query) |employees.filter(employee_id__icontains=search_query) |employees.filter(address__icontains=search_query)
+        employees = employees.filter(first_name__icontains=search_query) | employees.filter(last_name__icontains=search_query) |employees.filter(employee_id__icontains=search_query) #|employees.filter(address__icontains=search_query)#
 
     # Filter department
     dept_filter = request.GET.get('department')
