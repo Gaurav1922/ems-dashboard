@@ -1,0 +1,120 @@
+{% extends 'employees/base.html' %}
+
+{% block title %}Messaging Dashboard - EMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-comments me-2"></i>Messaging Dashboard</h2>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'send_email' %}" class="btn btn-primary">
+                        <i class="fas fa-envelope me-2"></i>Send Email
+                    </a>
+                    <a href="{% url 'send_whatsapp' %}" class="btn btn-success">
+                        <i class="fab fa-whatsapp me-2"></i>Send WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Employee List -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>Active Employees
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for employee in employees %}
+                        <div class="list-group-item bg-transparent border-secondary">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1 text-muted">{{ employee.first_name }} {{ employee.last_name }}</h6>
+                                    <p class="mb-1 text-muted">{{ employee.position }} - {{ employee.department }}</p>
+                                    <small class="text-muted">{{ employee.email }}</small>
+                                    {% if employee.phone_number %}
+                                        <br><small class="text-success"><i class="fab fa-whatsapp me-1"></i>{{ employee.phone_number }}</small>
+                                    {% endif %}
+                                </div>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'send_email_to' employee.id %}" class="btn btn-outline-primary btn-sm" title="Send Email">
+                                        <i class="fas fa-envelope"></i>
+                                    </a>
+                                    {% if employee.phone_number %}
+                                    <a href="{% url 'send_whatsapp_to' employee.id %}" class="btn btn-outline-success btn-sm" title="Send WhatsApp">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'message_history' employee.id %}" class="btn btn-outline-info btn-sm" title="Message History">
+                                        <i class="fas fa-history"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center text-muted p-3">
+                            <i class="fas fa-users fa-3x mb-3"></i>
+                            <p>No active employees found.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Messages -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Recent Messages
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for message in recent_messages %}
+                        <div class="list-group-item bg-transparent border-secondary">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-1">
+                                        {% if message.message_type == 'email' %}
+                                            <i class="fas fa-envelope text-primary me-2"></i>
+                                        {% else %}
+                                            <i class="fab fa-whatsapp text-success me-2"></i>
+                                        {% endif %}
+                                        <h6 class="mb-0 text-muted">{{ message.recipient.first_name }} {{ message.recipient.last_name }}</h6>
+                                    </div>
+                                    {% if message.subject %}
+                                        <p class="mb-1 text-muted">{{ message.subject|truncatechars:50 }}</p>
+                                    {% endif %}
+                                    <p class="mb-1 text-muted">{{ message.content|truncatechars:80 }}</p>
+                                    <small class="text-muted">{{ message.sent_at|timesince }} ago</small>
+                                </div>
+                                <div>
+                                    {% if message.is_sent %}
+                                        <span class="badge bg-success">Sent</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center text-muted p-3">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>No recent messages.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

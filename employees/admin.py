@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Employee, Department
+from .models import Employee, Department, Message
 # Register your models here.
 
 @admin.register(Department)
@@ -26,3 +26,8 @@ class EmployeeAdmin(admin.ModelAdmin):
             'fields': ('department', 'position', 'salary', 'hire_date', 'status')
         }),
     )
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('sender', 'recipient', 'message_type', 'is_sent', 'sent_at')
+    list_filter = ('message_type', 'is_sent', 'sent_at')
+    search_fields = ('recipient__full_name', 'subject', 'content')

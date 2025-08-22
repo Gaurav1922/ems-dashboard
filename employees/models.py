@@ -1,6 +1,8 @@
 from django.db import models
 from django.urls import reverse
 from django.core.validators import RegexValidator
+from django.contrib.auth.models import User
+from employees.models import User
 
 # Create your models here.
 class Department(models.Model):
@@ -62,3 +64,22 @@ class Employee(models.Model):
     
     class Meta:
         ordering = ['first_name', 'last_name']
+
+
+class Message(models.Model):
+    MESSAGE_TYPES = [
+        ('email', 'Email'),
+        ('whatsapp', 'WhatsApp'),
+    ]
+
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    recipient = models.ForeignKey("Employee", on_delete=models.CASCADE)  # ✅ string reference
+    message_type = models.CharField(max_length=20, choices=MESSAGE_TYPES)
+    subject = models.CharField(max_length=255, blank=True, null=True)
+    content = models.TextField()
+    is_sent = models.BooleanField(default=False)
+    error_message = models.TextField(blank=True, null=True)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.message_type} to {self.recipient} ({'Sent' if self.is_sent else 'Failed'})"

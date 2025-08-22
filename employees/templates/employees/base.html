@@ -2,148 +2,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Employee Management System{% endblock %}</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .sidebar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: white;
-        }
-        .sidebar .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin: 5px 0;
-            transition: all 0.3s ease;
-        }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            color: white;
-            background: rgba(255,255,255,0.1);
-            transform: translateX(5px);
-        }
-        .main-content {
-            background: #f8f9fa;
-            min-height: 100vh;
-        }
-        .card {
-            border: none;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-            transition: transform 0.2s;
-        }
-        .card:hover {
-            transform: translateY(-2px);
-        }
-        .stat-card {
-            background: linear-gradient(135deg, #ff6b6b, #ffa500);
-            color: white;
-        }
-        .stat-card.employees {
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-        }
-        .stat-card.departments {
-            background: linear-gradient(135deg, #43e97b, #38f9d7);
-        }
-        .stat-card.salary {
-            background: linear-gradient(135deg, #fa709a, #fee140);
-        }
-        .navbar-custom {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-        }
-        .table th {
-            background: #f8f9fa;
-            font-weight: 600;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Employee Management System{% endblock %}</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .sidebar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: white;
+    }
+    .sidebar .nav-link {
+      color: rgba(255,255,255,0.8);
+      padding: 12px 20px;
+      border-radius: 8px;
+      margin: 5px 0;
+      transition: all 0.3s ease;
+    }
+    .sidebar .nav-link:hover, .sidebar .nav-link.active {
+      color: white;
+      background: rgba(255,255,255,0.1);
+      transform: translateX(5px);
+    }
+    .main-content {
+      background: #f8f9fa;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); transition: transform 0.2s; }
+    .card:hover { transform: translateY(-2px); }
+    .stat-card.employees { background: linear-gradient(135deg, #4facfe, #00f2fe); color:white; }
+    .stat-card.departments { background: linear-gradient(135deg, #43e97b, #38f9d7); color:white; }
+    .stat-card.salary { background: linear-gradient(135deg, #fa709a, #fee140); color:white; }
+  </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
-                <div class="position-sticky pt-3">
-                    <div class="text-center mb-4">
-                        <h4><i class="fas fa-users"></i> EMS</h4>
-                        <p class="small">Employee Management System</p>
-                    </div>
-                    
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
-                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if 'employee' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'employee_list' %}">
-                                <i class="fas fa-user-friends me-2"></i>Employees
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if 'department' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'department_list' %}">
-                                <i class="fas fa-building me-2"></i>Departments
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-
-            <!-- Main content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
-                <!-- Navbar -->
-                <nav class="navbar navbar-expand-lg navbar-custom mb-4">
-                    <div class="container-fluid">
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-                        <div class="collapse navbar-collapse" id="navbarNav">
-                            <ul class="navbar-nav ms-auto">
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                        <i class="fas fa-user-circle"></i> Admin
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="/admin/"><i class="fas fa-cog"></i> Settings</a></li>
-                                        <!--<li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>-->
-                                    </ul>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </nav>
-
-                <!-- Messages -->
-                {% if messages %}
-                    {% for message in messages %}
-                        <p id = "message-timer" class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    
-                        </p>
-                    {% endfor %}
-                {% endif %}
-
-                <!-- Page Content -->
-                {% block content %}
-                {% endblock %}
-            </main>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+        <div class="position-sticky pt-3">
+          <div class="text-center mb-4">
+            <h4><i class="fas fa-users"></i> EMS</h4>
+            <p class="small">Employee Management System</p>
+          </div>
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if 'employee' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'employee_list' %}">
+                <i class="fas fa-user-friends me-2"></i>Employees
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if 'department' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'department_list' %}">
+                <i class="fas fa-building me-2"></i>Departments
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if 'messaging' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'messaging_dashboard' %}">
+                <i class="fas fa-comments me-2"></i>Messaging
+              </a>
+            </li>
+          </ul>
         </div>
+      </nav>
+
+      <!-- Main content -->
+      <main class="col-md-9 ms-sm-auto col-lg-10 main-content">
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-light bg-white shadow-sm mb-4">
+          <div class="container-fluid">
+            <!-- Sidebar toggle (visible only on mobile) -->
+            <button class="btn btn-outline-secondary d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+              <i class="fas fa-bars"></i>
+            </button>
+            
+            <!-- User info + Logout -->
+            <div class="d-flex align-items-center ms-auto">
+              <span class="me-3">
+                <i class="fas fa-user-circle me-1"></i>
+                {% if user.first_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}
+              </span>
+              <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-sign-out-alt me-1"></i> Logout
+              </a>
+            </div>
+          </div>
+        </nav>
+
+        <!-- Welcome message -->
+        <!--<div class="alert alert-info alert-dismissible fade show" role="alert">
+          <i class="fas fa-info-circle me-2"></i>
+          Welcome back, <strong>
+            {% if user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}
+          </strong>! You are successfully logged in to the Employee Management System.
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>-->
+
+        <!-- Messages -->
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <!-- Page Content -->
+        {% block content %}{% endblock %}
+      </main>
     </div>
+  </div>
 
-    <script src="{% static 'js/app.js' %}"></script>
-
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    {% block scripts %}
-    {% endblock %}
+  <script src="{% static 'js/app.js' %}"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

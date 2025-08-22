@@ -1,43 +1,75 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Count, Avg
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.core.paginator import Paginator
-from .models import Employee, Department
-from .forms import EmployeeForm, DepartmentForm
-from django.http import HttpResponse
+from .models import Employee, Department, Message
+from .forms import EmployeeForm, DepartmentForm, EmailMessageForm, WhatsAppMessageForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.core.mail import send_mail
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+
+import json
+import requests
 
 
-# Create your views here.
-"""def register_view(request):
+# Authentication Views
+def user_login(request):
+    """User login view"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Welcome back, {username}!')
+                next_page = request.GET.get('next', 'dashboard')
+                return redirect(next_page)
+            else:
+                messages.error(request, 'Invalid username or password.')
+        else:
+            messages.error(request, 'Invalid username or password.')
+    else:
+        form = AuthenticationForm()
+    return render(request, 'registration/login.html', {'form' : form})
+
+def user_register(request):
+    """User registration view"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            username ="""
-"""def login_view(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('home')
+            username = form.cleaned_data.get('username')
+            messages.success(request, f'Account created for {username}! You can now log in.')
+            return redirect('login')
         else:
-            messages.error(request, 'Invalid username or password')
-    return render(request, 'employees/login.html')
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+    else:
+        form = UserCreationForm()
+    
+    return render(request, 'registration/register.html', {'form': form})
 
-def logout_view(request):
+def user_logout(request):
+    """User Logout view"""
     logout(request)
-    messages.success(request, 'You have been successfully logged out.')
+    messages.success(request, 'You have been logged out successfully.')
     return redirect('login')
 
+# Create your views here.
 @login_required
-"""
 def dashboard(request):
     """Main dashboard view"""
     total_employees = Employee.objects.count()
@@ -65,6 +97,7 @@ def dashboard(request):
 
     return render(request, 'employees/dashboard.html', context)
 
+@login_required
 def employee_list(request):
     """List all employees with search and filter"""
     employees = Employee.objects.select_related('department').all()
@@ -100,11 +133,13 @@ def employee_list(request):
     }
     return render(request, 'employees/employee_list.html', context)
 
+@login_required
 def employee_detail(request, pk):
     """Employee Details"""
     employee = get_object_or_404(Employee, pk=pk)
     return render(request, 'employees/employee_detail.html', {'employee':employee})
 
+@login_required
 def employee_create(request):
     """Create new employee"""
     if request.method == 'POST':
@@ -121,6 +156,7 @@ def employee_create(request):
         'title': 'ADD NEW EMPLOYEE'
     })
 
+@login_required
 def employee_update(request, pk):
     """ Upadate Employee"""
     employee = get_object_or_404(Employee, pk=pk)
@@ -139,6 +175,7 @@ def employee_update(request, pk):
         'employee': employee
     })
 
+@login_required
 def employee_delete(request, pk):
     """ Delete employee"""
     employee = get_object_or_404(Employee, pk=pk)
@@ -148,6 +185,7 @@ def employee_delete(request, pk):
         return redirect('employee_list')
     return render(request, 'employees/employee_confirm_delete.html', {'employee': employee})
 
+@login_required
 def department_list(request):
     """List all Department"""
     departments = Department.objects.annotate(
@@ -156,6 +194,7 @@ def department_list(request):
 
     return render(request, 'employees/department_list.html', {'departments': departments})
 
+@login_required
 def department_create(request):
     """Create new department"""
     if request.method == 'POST':
@@ -172,6 +211,7 @@ def department_create(request):
         'title': 'Add New Department'
     })
 
+@login_required
 def department_update(request,pk):
     """update Department"""
     department = get_object_or_404(Department, pk=pk)
@@ -188,3 +228,206 @@ def department_update(request,pk):
         'title': f'Update{department.name}',
         'department': department
     })
+
+@login_required
+def messaging_dashboard(request):
+    employees = Employee.objects.filter(status='active')
+    # last 5 messages, newest first
+    recent_messages = Message.objects.filter(sender=request.user).order_by('-sent_at')[:5]
+
+    context = {
+        'employees': employees,
+        'recent_messages': recent_messages,
+    }
+    return render(request, 'messaging/messaging_dashboard.html', context)
+
+try:
+    from twilio.rest import Client
+    TWILIO_AVAILABLE = True
+except ImportError:
+    TWILIO_AVAILABLE = False
+
+@login_required
+def send_email(request, employee_id=None):
+    """Send email to employee with improved error handling"""
+    try:
+        employee = None
+        if employee_id:
+            employee = get_object_or_404(Employee, id=employee_id)
+        
+        if request.method == 'POST':
+            form = EmailMessageForm(request.POST)
+            if form.is_valid():
+                recipient_id = form.cleaned_data['recipient']
+                subject = form.cleaned_data['subject']
+                content = form.cleaned_data['content']
+
+                try:
+                    recipient = Employee.objects.get(id=recipient_id)
+                except Employee.DoesNotExist:
+                    messages.error(request, 'Selected employee not found.')
+                    return redirect('messaging_dashboard')
+
+                # Create message record
+                try:
+                    msg_record = Message.objects.create(
+                        sender=request.user,
+                        recipient=recipient,
+                        message_type='email',
+                        subject=subject,
+                        content=content
+                    )
+                except Exception as e:
+                    messages.error(request, f'Error creating message record: {str(e)}')
+                    return redirect('messaging_dashboard')
+
+                # Try to send email
+                try:
+                    send_mail(
+                        subject=subject,
+                        message=content,
+                        from_email=getattr(settings, 'EMAIL_HOST_USER', 'noreply@example.com'),
+                        recipient_list=[recipient.email],
+                        fail_silently=False,
+                    )
+                    msg_record.is_sent = True
+                    msg_record.save()
+                    messages.success(request, f'Email sent successfully to {recipient.full_name}!')
+
+                except Exception as e:
+                    msg_record.error_message = str(e)
+                    msg_record.save()
+                    messages.error(request, f'Failed to send email: {str(e)}')
+                
+                return redirect('messaging_dashboard')
+            else:
+                messages.error(request, 'Please correct the form errors.')
+        else:
+            initial_data = {}
+            if employee:
+                initial_data = {'recipient': employee.id}
+            form = EmailMessageForm(initial=initial_data)
+
+        context = {
+            'form': form,
+            'selected_employee': employee
+        }
+        return render(request, 'messaging/send_email.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'An unexpected error occurred: {str(e)}')
+        return redirect('messaging_dashboard')
+
+
+@login_required
+def send_whatsapp(request, employee_id=None):
+    """Send Whatsapp message to employee"""
+    employee = None
+    if employee_id:
+        employee = get_object_or_404(Employee, id=employee_id)
+
+    if request.method == 'POST':
+        form = WhatsAppMessageForm(request.POST)
+        if form.is_valid():
+            recipient_id = form.cleaned_data['recipient']
+            content = form.cleaned_data['content']
+
+            recipient = get_object_or_404(Employee, id=recipient_id)
+
+            if not recipient.phone_number:
+                messages.error(request, f'{recipient.full_name} does not have a WhatsApp number configured.')
+                return redirect('messaging_dashboard')
+            
+            # Create message Record
+            msg_record = Message.objects.create(
+                sender=request.user,
+                recipient=recipient,
+                message_type='whatsapp',
+                content=content
+            )
+
+            try:
+                # Send WhatsApp message using Twilio.
+                success = send_whatsapp_message(recipient.phone_number, content)
+
+                if success:
+                    msg_record.is_sent = True
+                    msg_record.save()
+                    messages.success(request, f'WhatsApp message sent successfully to {recipient.full_name}!')
+                else:
+                    raise Exception("Failed to send WhatsApp message")
+                
+            except Exception as e:
+                msg_record.error_message = str(e)
+                msg_record.save()
+                messages.error(request, f'Failed to send WhatsApp message: {str(e)}')
+            
+            return redirect('messaging_dashboard')
+    else:
+        initial_data = {'recipient': employee.id} if employee else {}
+        form = WhatsAppMessageForm(initial_data)
+
+    employees = Employee.objects.filter(status='active', phone_number__isnull=False)
+    return render(request, 'messaging/send_whatsapp.html', {
+        'form' : form,
+        'employees' : employees,
+        'selected_employee' : employee
+    })
+
+def send_whatsapp_message(phone_number, message_content):
+    """Helper function to send whatsapp message via twilio"""
+    if not TWILIO_AVAILABLE:
+        print("Twilio library not installed. Install with: pip install twilio")
+        return False
+
+
+    try:
+        # Get Twilio credentials from settings
+        account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', None)
+        auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', None)
+        twilio_whatsapp_number = getattr(settings, 'TWILIO_WHATSAPP_NUMBER', None)
+
+        if not all([account_sid, auth_token, twilio_whatsapp_number]):
+            print("Twilio credentials not configured in settings")
+            return False
+
+        client = Client(account_sid, auth_token)
+
+        # Format phone number - ensure it starts with +
+        if not phone_number.startswith('+'):
+            phone_number = '+' + phone_number
+
+        message = client.messages.create(
+            body=message_content,
+            from_=f'whatsapp:{twilio_whatsapp_number}',
+            to=f'whatsapp:{phone_number}'
+        )
+
+        print(f"WhatsApp message sent successfully. SID: {message.sid}")
+        return True
+        
+    except Exception as e:
+        print(f"WhatsApp send error: {e}")
+        return False
+
+
+@login_required
+def message_history(request, employee_id):
+    """View message history for specific employee"""
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    messages_sent = Message.objects.filter(
+        sender=request.user,
+        recipient=employee
+    ).order_by('-sent_at')  # newest first
+
+    context = {
+        'employee': employee,
+        'message_list': messages_sent,
+    }
+    return render(request, 'messaging/message_history.html', context)
+
+@login_required
+def send_mail_view(request):
+    """Alternative send email view"""
+    return send_email(request)
