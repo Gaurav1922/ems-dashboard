@@ -1,5 +1,1 @@
-# Ignore real env file
-.env
-
-# Do not ignore the example file
-!.env.example
+.env 
