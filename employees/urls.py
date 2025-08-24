@@ -6,6 +6,9 @@ urlpatterns = [
     path('login/', views.user_login, name='login'),
     path('register/', views.user_register, name='register'),
     path('logout/', views.user_logout, name='logout'),
+
+    # Session check URL
+    path('check-session/', views.check_session, name='check_session'),
     
     # Dashboard
     path('', views.dashboard, name='dashboard'),

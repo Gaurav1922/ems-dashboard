@@ -11,11 +11,14 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.core.mail import send_mail
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.cache import never_cache
+from django.views.decorators import method_decorator
 
 import json
 import requests
 
 
+@never_cache
 # Authentication Views
 def user_login(request):
     """User login view"""
@@ -41,6 +44,8 @@ def user_login(request):
         form = AuthenticationForm()
     return render(request, 'registration/login.html', {'form' : form})
 
+
+@never_cache
 def user_register(request):
     """User registration view"""
     if request.user.is_authenticated:
@@ -62,6 +67,8 @@ def user_register(request):
     
     return render(request, 'registration/register.html', {'form': form})
 
+
+@never_cache
 def user_logout(request):
     """User Logout view"""
     logout(request)
@@ -69,6 +76,7 @@ def user_logout(request):
     return redirect('login')
 
 # Create your views here.
+@never_cache
 @login_required
 def dashboard(request):
     """Main dashboard view"""
@@ -97,6 +105,7 @@ def dashboard(request):
 
     return render(request, 'employees/dashboard.html', context)
 
+@never_cache
 @login_required
 def employee_list(request):
     """List all employees with search and filter"""
@@ -133,12 +142,14 @@ def employee_list(request):
     }
     return render(request, 'employees/employee_list.html', context)
 
+@never_cache
 @login_required
 def employee_detail(request, pk):
     """Employee Details"""
     employee = get_object_or_404(Employee, pk=pk)
     return render(request, 'employees/employee_detail.html', {'employee':employee})
 
+@never_cache
 @login_required
 def employee_create(request):
     """Create new employee"""
@@ -156,6 +167,7 @@ def employee_create(request):
         'title': 'ADD NEW EMPLOYEE'
     })
 
+@never_cache
 @login_required
 def employee_update(request, pk):
     """ Upadate Employee"""
@@ -175,6 +187,7 @@ def employee_update(request, pk):
         'employee': employee
     })
 
+@never_cache
 @login_required
 def employee_delete(request, pk):
     """ Delete employee"""
@@ -185,6 +198,7 @@ def employee_delete(request, pk):
         return redirect('employee_list')
     return render(request, 'employees/employee_confirm_delete.html', {'employee': employee})
 
+@never_cache
 @login_required
 def department_list(request):
     """List all Department"""
@@ -194,6 +208,7 @@ def department_list(request):
 
     return render(request, 'employees/department_list.html', {'departments': departments})
 
+@never_cache
 @login_required
 def department_create(request):
     """Create new department"""
@@ -211,6 +226,7 @@ def department_create(request):
         'title': 'Add New Department'
     })
 
+@never_cache
 @login_required
 def department_update(request,pk):
     """update Department"""
@@ -229,6 +245,7 @@ def department_update(request,pk):
         'department': department
     })
 
+@never_cache
 @login_required
 def messaging_dashboard(request):
     employees = Employee.objects.filter(status='active')
@@ -247,6 +264,7 @@ try:
 except ImportError:
     TWILIO_AVAILABLE = False
 
+@never_cache
 @login_required
 def send_email(request, employee_id=None):
     """Send email to employee with improved error handling"""
@@ -319,6 +337,7 @@ def send_email(request, employee_id=None):
         return redirect('messaging_dashboard')
 
 
+@never_cache
 @login_required
 def send_whatsapp(request, employee_id=None):
     """Send Whatsapp message to employee"""
@@ -410,7 +429,7 @@ def send_whatsapp_message(phone_number, message_content):
         print(f"WhatsApp send error: {e}")
         return False
 
-
+@never_cache
 @login_required
 def message_history(request, employee_id):
     """View message history for specific employee"""
@@ -427,7 +446,16 @@ def message_history(request, employee_id):
     }
     return render(request, 'messaging/message_history.html', context)
 
+@never_cache
 @login_required
 def send_mail_view(request):
     """Alternative send email view"""
     return send_email(request)
+
+
+@never_cache
+def check_session(request):
+    """Check if user session is still valid"""
+    return JsonResponse({
+        'authenticated': request.user.is_authenticated
+    })

@@ -119,7 +119,107 @@
       </main>
     </div>
   </div>
+  <!-- Add this script section to your base template (base.html) for authenticated pages -->
+{% if user.is_authenticated %}
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 
+<script>
+    // Session management and cache control for authenticated users
+    (function() {
+        // Disable back button functionality after logout
+        if (window.history && window.history.pushState) {
+            window.history.pushState(null, null, location.href);
+            window.addEventListener('popstate', function(event) {
+                // Check if user is still authenticated
+                fetch('{% url "check_session" %}', {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.authenticated) {
+                        // User is not authenticated, redirect to login
+                        window.location.replace('{% url "login" %}');
+                        return;
+                    }
+                    // User is still authenticated, push state again
+                    window.history.pushState(null, null, location.href);
+                })
+                .catch(error => {
+                    console.error('Session check failed:', error);
+                    // On error, assume session expired and redirect
+                    window.location.replace('{% url "login" %}');
+                });
+            });
+        }
+
+        // Check session on page load from cache (bfcache)
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                // Page was loaded from back-forward cache
+                fetch('{% url "check_session" %}', {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.authenticated) {
+                        window.location.replace('{% url "login" %}');
+                    }
+                })
+                .catch(error => {
+                    console.error('Session check failed:', error);
+                    window.location.replace('{% url "login" %}');
+                });
+            }
+        });
+
+        // Prevent caching by reloading page on focus if necessary
+        window.addEventListener('focus', function() {
+            // Check session when window gets focus
+            fetch('{% url "check_session" %}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.authenticated) {
+                    window.location.replace('{% url "login" %}');
+                }
+            })
+            .catch(error => {
+                console.error('Session check failed:', error);
+            });
+        });
+
+        // Clear any stored form data on page unload
+        window.addEventListener('beforeunload', function() {
+            // Clear form data
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                if (form.reset) {
+                    form.reset();
+                }
+            });
+        });
+
+    })();
+</script>
+{% endif %}
   <script src="{% static 'js/app.js' %}"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
