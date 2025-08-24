@@ -12,7 +12,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.cache import never_cache
-from django.views.decorators import method_decorator
+from django.utils.decorators import method_decorator
 
 import json
 import requests
