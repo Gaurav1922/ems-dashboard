@@ -293,7 +293,8 @@ def send_email(request, employee_id=None):
                         recipient=recipient,
                         message_type='email',
                         subject=subject,
-                        content=content
+                        content=content,
+                        is_sent = False
                     )
                 except Exception as e:
                     messages.error(request, f'Error creating message record: {str(e)}')
@@ -301,16 +302,21 @@ def send_email(request, employee_id=None):
 
                 # Try to send email
                 try:
-                    send_mail(
+                    result = send_mail(
                         subject=subject,
                         message=content,
                         from_email=getattr(settings, 'EMAIL_HOST_USER', 'noreply@example.com'),
                         recipient_list=[recipient.email],
                         fail_silently=False,
                     )
-                    msg_record.is_sent = True
+
+                    if result == 1:
+                        msg_record.is_sent = True
+                        messages.success(request, f'Email sent successfully to {recipient.full_name}!')
+                    else:
+                        msg_record.error_message = "SMTP server did not accept the email."
+                        messages.error(request, f"Failed to send email to {recipient.full_name}.")
                     msg_record.save()
-                    messages.success(request, f'Email sent successfully to {recipient.full_name}!')
 
                 except Exception as e:
                     msg_record.error_message = str(e)
